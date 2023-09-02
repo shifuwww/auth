@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/base';
 import { UserEntity } from 'src/entities/user.entity';
 import { Repository } from 'typeorm';
+import { CreateUserDto } from './dtos';
 
 @Injectable()
 export class UserService extends BaseService<UserEntity> {
@@ -25,5 +26,17 @@ export class UserService extends BaseService<UserEntity> {
     return this._userRepository.findOne({
       where: { username },
     });
+  }
+
+  public createUser(createUserDto: CreateUserDto) {
+    try {
+      const newUser = new UserEntity();
+      newUser.absorbFromDto(createUserDto);
+
+      return this._userRepository.save(newUser);
+    } catch (err) {
+      this.Logger.error(err);
+      throw err;
+    }
   }
 }

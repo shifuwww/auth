@@ -8,7 +8,7 @@ import {
 import { UserService } from '../user/user.service';
 import { ActivateRegisterDto, RegisterDto } from './dtos';
 import { generateCode } from 'src/common/utils';
-import { SmtpService } from 'src/shared/modules';
+import { HashingService, JwtService, SmtpService } from 'src/shared/modules';
 import { AccountRedisRepository } from './repositories';
 import { AccountRedisEntity } from './entities';
 import { CreateUserDto } from '../user/dtos';
@@ -19,8 +19,10 @@ export class AuthService {
 
   constructor(
     private readonly _accountRedisRepository: AccountRedisRepository,
+    private readonly _hashingService: HashingService,
     private readonly _userService: UserService,
     private readonly _smtpService: SmtpService,
+    private readonly _jwtService: JwtService,
   ) {}
 
   public async register(registerDto: RegisterDto) {
@@ -43,6 +45,10 @@ export class AuthService {
 
       const code = generateCode();
 
+      registerDto.password = await this._hashingService.hashPassword(
+        registerDto.password,
+      );
+
       const account: AccountRedisEntity = {
         ...registerDto,
         code,
@@ -60,27 +66,44 @@ export class AuthService {
   }
 
   public async activateAccount(activateRegisterDto: ActivateRegisterDto) {
-    const { username, code } = activateRegisterDto;
+    try {
+      const { username, code } = activateRegisterDto;
 
-    const account = await this._accountRedisRepository.get({ username });
+      const account = await this._accountRedisRepository.get({ username });
 
-    if (!account) {
-      throw new UnauthorizedException({
-        message: 'UNAUTHORIZED_ERROR',
-        description: `You have not registered yet`,
+      if (!account) {
+        throw new UnauthorizedException({
+          message: 'UNAUTHORIZED_ERROR',
+          description: `You have not registered yet`,
+        });
+      }
+
+      if (account.code !== code) {
+        throw new UnprocessableEntityException({
+          message: 'UNPROCESSABLE_ENTITY_ERROR',
+          description: `Passed code does not match`,
+        });
+      }
+
+      const createUserDto = new CreateUserDto();
+      createUserDto.email = account.email;
+      createUserDto.username = account.username;
+      createUserDto.password = account.password;
+
+      const user = await this._userService.createUser(createUserDto);
+
+      const tokens = await this._jwtService.createJwtToken({
+        sub: user.id,
+        id: user.id,
+        email: user.id,
+        username: user.username,
+        role: user.role,
       });
-    }
 
-    if (account.code !== code) {
-      throw new UnprocessableEntityException({
-        message: 'UNPROCESSABLE_ENTITY_ERROR',
-        description: `Passed code does not match`,
-      });
+      return { ...tokens };
+    } catch (err) {
+      this.Logger.error(err);
+      throw err;
     }
-
-    const createUserDto = new CreateUserDto();
-    createUserDto.email = account.email;
-    createUserDto.username = account.username;
-    createUserDto.password = account.password;
   }
 }
