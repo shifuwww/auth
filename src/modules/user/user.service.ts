@@ -39,4 +39,8 @@ export class UserService extends BaseService<UserEntity> {
       throw err;
     }
   }
+
+  public updateUserToken(id: string, token: string) {
+    return this._userRepository.update({ id }, { token });
+  }
 }

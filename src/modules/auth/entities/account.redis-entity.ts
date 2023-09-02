@@ -1,3 +1,4 @@
+import { UserRoleEnum } from 'src/shared/enums';
 import { PrimaryKey, RedisEntity } from 'src/shared/modules/redis/decorators';
 
 @RedisEntity({
@@ -11,5 +12,5 @@ export class AccountRedisEntity {
   email: string;
   code: string;
   password: string;
-  role: any[];
+  role: UserRoleEnum;
 }

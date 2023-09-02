@@ -10,7 +10,8 @@ import {
   ActivateRegisterInterface,
   RegisterInterface,
 } from 'src/shared/interfaces';
-import { UserRole } from 'src/shared/enums';
+import { UserRoleEnum } from 'src/shared/enums';
+import { ResendActivateMailType } from 'src/shared/types';
 
 export class RegisterDto implements RegisterInterface {
   @ApiProperty({
@@ -38,7 +39,7 @@ export class RegisterDto implements RegisterInterface {
   })
   email: string;
 
-  role: UserRole[] = [];
+  role: UserRoleEnum = UserRoleEnum.User;
 }
 
 export class ActivateRegisterDto implements ActivateRegisterInterface {
@@ -51,6 +52,18 @@ export class ActivateRegisterDto implements ActivateRegisterInterface {
   @IsString()
   code: string;
 
+  @ApiProperty({
+    example: 'Player1',
+    type: String,
+    description: 'Username',
+  })
+  @IsString()
+  @MinLength(2)
+  @MaxLength(100)
+  username: string;
+}
+
+export class ResendActivateMailDto implements ResendActivateMailType {
   @ApiProperty({
     example: 'Player1',
     type: String,

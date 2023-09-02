@@ -1,9 +1,9 @@
-import { UserRole } from '../enums';
+import { UserRoleEnum } from '../enums';
 
 export interface UserJwtInterface {
   sub: string;
   id?: string;
   email?: string;
   username: string;
-  role: UserRole;
+  role: UserRoleEnum;
 }

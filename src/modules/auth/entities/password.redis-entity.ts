@@ -1,4 +1,4 @@
-import { PasswordStatus } from 'src/shared/enums';
+import { PasswordStatusEnum } from 'src/shared/enums';
 import { PrimaryKey, RedisEntity } from 'src/shared/modules/redis/decorators';
 
 @RedisEntity({
@@ -12,5 +12,5 @@ export class PasswordRedisEntity {
   id: string;
   username: string;
   code: string;
-  status: PasswordStatus;
+  status: PasswordStatusEnum;
 }

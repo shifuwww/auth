@@ -1,4 +1,4 @@
-export enum PasswordStatus {
+export enum PasswordStatusEnum {
   CONFIRMED,
   PENDING,
 }

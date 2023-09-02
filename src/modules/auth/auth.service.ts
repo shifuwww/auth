@@ -2,15 +2,20 @@ import {
   ConflictException,
   Injectable,
   Logger,
+  NotFoundException,
   UnauthorizedException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { ActivateRegisterDto, RegisterDto } from './dtos';
+import {
+  ActivateRegisterDto,
+  LoginDto,
+  RegisterDto,
+  ResendActivateMailDto,
+} from './dtos';
 import { generateCode } from 'src/common/utils';
 import { HashingService, JwtService, SmtpService } from 'src/shared/modules';
 import { AccountRedisRepository } from './repositories';
-import { AccountRedisEntity } from './entities';
 import { CreateUserDto } from '../user/dtos';
 
 @Injectable()
@@ -24,6 +29,42 @@ export class AuthService {
     private readonly _smtpService: SmtpService,
     private readonly _jwtService: JwtService,
   ) {}
+
+  public async login(loginDto: LoginDto) {
+    try {
+      const { username, password } = loginDto;
+
+      const user = await this._userService.getUserByUsername(username);
+
+      if (!user) {
+        throw new NotFoundException();
+      }
+
+      const isPasswordMatches = await this._hashingService.compare(
+        password,
+        user.password,
+      );
+
+      if (!isPasswordMatches) {
+        throw new UnauthorizedException('Password or email is incorrect');
+      }
+
+      const tokens = await this._jwtService.createJwtToken({
+        id: user.id,
+        sub: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      });
+
+      await this._userService.updateUserToken(user.id, tokens.refreshToken);
+
+      return { accessToken: tokens.accessToken };
+    } catch (err) {
+      this.Logger.error(err);
+      throw err;
+    }
+  }
 
   public async register(registerDto: RegisterDto) {
     try {
@@ -49,12 +90,10 @@ export class AuthService {
         registerDto.password,
       );
 
-      const account: AccountRedisEntity = {
+      await this._accountRedisRepository.set({
         ...registerDto,
         code,
-      };
-
-      await this._accountRedisRepository.set(account);
+      });
 
       this._smtpService.send(registerDto.email, code);
 
@@ -100,7 +139,42 @@ export class AuthService {
         role: user.role,
       });
 
-      return { ...tokens };
+      await this._userService.updateUserToken(user.id, tokens.refreshToken);
+
+      return { accessToken: tokens.accessToken };
+    } catch (err) {
+      this.Logger.error(err);
+      throw err;
+    }
+  }
+
+  public async resendActivateMailCode(
+    resendActivateMailDto: ResendActivateMailDto,
+  ) {
+    try {
+      const { username } = resendActivateMailDto;
+
+      const account = await this._accountRedisRepository.get({ username });
+
+      if (!account) {
+        throw new UnauthorizedException({
+          message: 'UNAUTHORIZED_ERROR',
+          description: `You have not registered yet`,
+        });
+      }
+
+      await this._accountRedisRepository.delete({ username });
+
+      const code = generateCode();
+
+      await this._accountRedisRepository.set({
+        ...account,
+        code,
+      });
+
+      this._smtpService.send(account.email, code);
+
+      return { code };
     } catch (err) {
       this.Logger.error(err);
       throw err;
