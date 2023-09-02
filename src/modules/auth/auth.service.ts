@@ -1,31 +1,86 @@
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { UserService } from '../user/user.service';
-import { RegisterDto } from './dtos/auth.dto';
+import { ActivateRegisterDto, RegisterDto } from './dtos';
 import { generateCode } from 'src/common/utils';
+import { SmtpService } from 'src/shared/modules';
+import { AccountRedisRepository } from './repositories';
+import { AccountRedisEntity } from './entities';
+import { CreateUserDto } from '../user/dtos';
 
 @Injectable()
 export class AuthService {
   private Logger = new Logger(AuthService.name);
 
-  constructor(private readonly _userService: UserService) {}
+  constructor(
+    private readonly _accountRedisRepository: AccountRedisRepository,
+    private readonly _userService: UserService,
+    private readonly _smtpService: SmtpService,
+  ) {}
 
   public async register(registerDto: RegisterDto) {
     try {
-      const { email } = registerDto;
+      const { email, username } = registerDto;
 
-      const user = await this._userService.getUserByEmail(email);
-
-      if (user) {
+      if (await this._userService.getUserByEmail(email)) {
         throw new ConflictException({
           message: 'CONFLICT_ERROR',
-          description: 'User already exists',
+          description: `User with email:${email} already exists`,
+        });
+      }
+
+      if (await this._userService.getUserByUsername(username)) {
+        throw new ConflictException({
+          message: 'CONFLICT_ERROR',
+          description: `User with username:${username} already exists`,
         });
       }
 
       const code = generateCode();
+
+      const account: AccountRedisEntity = {
+        ...registerDto,
+        code,
+      };
+
+      await this._accountRedisRepository.set(account);
+
+      this._smtpService.send(registerDto.email, code);
+
+      return { code };
     } catch (err) {
       this.Logger.error(err);
       throw err;
     }
+  }
+
+  public async activateAccount(activateRegisterDto: ActivateRegisterDto) {
+    const { username, code } = activateRegisterDto;
+
+    const account = await this._accountRedisRepository.get({ username });
+
+    if (!account) {
+      throw new UnauthorizedException({
+        message: 'UNAUTHORIZED_ERROR',
+        description: `You have not registered yet`,
+      });
+    }
+
+    if (account.code !== code) {
+      throw new UnprocessableEntityException({
+        message: 'UNPROCESSABLE_ENTITY_ERROR',
+        description: `Passed code does not match`,
+      });
+    }
+
+    const createUserDto = new CreateUserDto();
+    createUserDto.email = account.email;
+    createUserDto.username = account.username;
+    createUserDto.password = account.password;
   }
 }

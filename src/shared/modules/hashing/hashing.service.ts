@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
-
-const DEFAULT_SALT_LENGTH = 16;
+import { DEFAULT_SALT_LENGTH } from 'src/shared/const';
 
 @Injectable()
 export class HashingService {

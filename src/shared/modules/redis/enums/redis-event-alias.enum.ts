@@ -1,0 +1,15 @@
+export enum RedisEventAlias {
+  GENERIC_COMMAND = 'g',
+  STRING_COMMAND = '$',
+  LIST_COMMAND = 'l',
+  SET_COMMAND = 's',
+  HASH_COMMAND = 'h',
+  SORTED_SET_COMMAND = 'z',
+  STREAM_COMMAND = 't',
+  MODULE_KEY_TYPE_EVENT = 'd',
+  EXPIRED_EVENT = 'x',
+  EVICTED_EVENT = 'e',
+  KEY_MISS_EVENT = 'e',
+  NEW_KEY_EVENT = 'e',
+  ALL = 'A',
+}

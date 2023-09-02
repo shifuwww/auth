@@ -1,5 +1,5 @@
 import { BaseEntity } from 'src/common/base';
-import { UserInterface } from 'src/shared';
+import { UserInterface } from 'src/shared/interfaces';
 import { Column, Entity } from 'typeorm';
 
 @Entity()

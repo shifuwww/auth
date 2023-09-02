@@ -1,9 +1,14 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UserModule } from '../user/user.module';
+import { SmtpModule } from 'src/shared/modules';
+import {
+  AccountRedisRepository,
+  PasswordRedisRepository,
+} from './repositories';
 
 @Module({
-  imports: [UserModule],
-  providers: [AuthService],
+  imports: [UserModule, SmtpModule],
+  providers: [AuthService, AccountRedisRepository, PasswordRedisRepository],
 })
 export class AuthModule {}
