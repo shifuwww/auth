@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
-import { UserJwtInterface } from 'src/shared/interfaces';
+import { UserAtJwtInterface } from 'src/shared/interfaces';
 
 @Injectable()
 export class JwtService {
@@ -10,11 +10,19 @@ export class JwtService {
     private readonly _configService: ConfigService,
   ) {}
 
-  public verifyJwtToken(token: string) {
-    return this._jwtService.verifyAsync(token);
+  public verifyAtJwtToken(token: string) {
+    return this._jwtService.verifyAsync(token, {
+      secret: this._configService.get('JWT_ACCESS_SECRET'),
+    });
   }
 
-  async createJwtToken(payload: UserJwtInterface) {
+  public verifyRtJwtToken(token: string) {
+    return this._jwtService.verifyAsync(token, {
+      secret: this._configService.get('JWT_REFRESH_SECRET'),
+    });
+  }
+
+  async createJwtToken(payload: UserAtJwtInterface) {
     const [accessToken, refreshToken] = await Promise.all([
       this._createAccessToken(payload),
       this._createRefreshToken(payload),
@@ -26,14 +34,14 @@ export class JwtService {
     };
   }
 
-  private async _createAccessToken(payload: UserJwtInterface) {
+  private async _createAccessToken(payload: UserAtJwtInterface) {
     return this._jwtService.signAsync(payload, {
       secret: this._configService.get('JWT_ACCESS_SECRET'),
       expiresIn: `${this._configService.get('JWT_ACCESS_TOKEN_TTL')}s`,
     });
   }
 
-  private async _createRefreshToken(payload: UserJwtInterface) {
+  private async _createRefreshToken(payload: UserAtJwtInterface) {
     return this._jwtService.signAsync(payload, {
       secret: this._configService.get('JWT_REFRESH_SECRET'),
       expiresIn: `${this._configService.get('JWT_REFRESH_TOKEN_TTL')}s`,

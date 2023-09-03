@@ -24,7 +24,7 @@ import {
 import { CreateUserDto } from '../user/dtos';
 import {
   ChangePasswordDto,
-  ForgotPasswordDto,
+  ForgetPasswordDto,
   ValidatePasswordChangeDto,
 } from './dtos/forgot-password';
 import { PasswordStatusEnum } from 'src/shared/enums';
@@ -204,7 +204,9 @@ export class AuthService {
     const { refreshToken } = refreshTokenDto;
 
     try {
-      const { sub, role } = await this._jwtService.verifyJwtToken(refreshToken);
+      const { sub, role } = await this._jwtService.verifyRtJwtToken(
+        refreshToken,
+      );
 
       const user = await this._userService.getOneById(sub);
 
@@ -225,9 +227,9 @@ export class AuthService {
     }
   }
 
-  public async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+  public async forgetPassword(forgetPasswordDto: ForgetPasswordDto) {
     try {
-      const { email } = forgotPasswordDto;
+      const { email } = forgetPasswordDto;
 
       const code = generateCode();
 
@@ -250,7 +252,7 @@ export class AuthService {
     }
   }
 
-  public async resendRecoveryPassword(forgotPasswordDto: ForgotPasswordDto) {
+  public async resendRecoveryPassword(forgotPasswordDto: ForgetPasswordDto) {
     try {
       const { email } = forgotPasswordDto;
 
@@ -328,5 +330,11 @@ export class AuthService {
       this.Logger.error(err);
       throw err;
     }
+  }
+
+  public async validateToken(token: string) {
+    const { id } = await this._jwtService.verifyAtJwtToken(token);
+
+    return this._userService.getOneById(id);
   }
 }

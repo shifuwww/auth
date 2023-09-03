@@ -11,7 +11,7 @@ export const ormConfig: TypeOrmModuleAsyncOptions = {
       database: configService.get('PSQL_DATABASE'),
       username: configService.get('PSQL_USERNAME'),
       password: configService.get('PSQL_PASSWORD'),
-      entities: [`${__dirname}/../entities/*.entity{.ts,.js}`],
+      entities: ['dist/**/*.entity.js'],
       synchronize: true,
     };
   },

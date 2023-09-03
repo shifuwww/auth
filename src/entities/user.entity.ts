@@ -1,4 +1,4 @@
-import { BaseEntity } from 'src/common/base';
+import { BaseEntity } from '../common/base/base.entity';
 import { UserRoleEnum } from 'src/shared/enums';
 import { UserInterface } from 'src/shared/interfaces';
 import { Column, Entity } from 'typeorm';

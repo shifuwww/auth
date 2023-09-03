@@ -2,11 +2,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsEmail, IsString, IsStrongPassword, Length } from 'class-validator';
 import {
   ChangePasswordType,
-  ForgotPasswordType,
+  ForgetPasswordType,
   ValidatePasswordChangeType,
 } from 'src/shared/types';
 
-export class ForgotPasswordDto implements ForgotPasswordType {
+export class ForgetPasswordDto implements ForgetPasswordType {
   @ApiProperty({
     example: 'user@gmail.come',
     type: String,

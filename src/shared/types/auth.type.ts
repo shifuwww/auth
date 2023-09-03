@@ -2,12 +2,12 @@ import { ActivateRegisterInterface, RegisterInterface } from '../interfaces';
 
 export type ResendActivateMailType = Omit<ActivateRegisterInterface, 'code'>;
 
-export type ForgotPasswordType = Pick<RegisterInterface, 'email'>;
+export type ForgetPasswordType = Pick<RegisterInterface, 'email'>;
 
-export type ValidatePasswordChangeType = ForgotPasswordType & {
+export type ValidatePasswordChangeType = ForgetPasswordType & {
   code: string;
 };
 
-export type ChangePasswordType = ForgotPasswordType & {
+export type ChangePasswordType = ForgetPasswordType & {
   password: string;
 };
