@@ -239,6 +239,10 @@ export class AuthService {
 
       const user = await this._userService.getOneById(sub);
 
+      if (!user.token) {
+        throw new ForbiddenException('Access Denied');
+      }
+
       const tokens = await this._jwtService.createJwtToken({
         id: user.id,
         sub: user.id,
@@ -266,7 +270,7 @@ export class AuthService {
 
       const user = await this._userService.getUserByEmail(email);
 
-      if (user) {
+      if (!user) {
         throw new NotFoundException();
       }
 
@@ -298,7 +302,6 @@ export class AuthService {
       const { email } = forgotPasswordDto;
 
       const credentials = await this._passwordRedisRepository.get({ email });
-
       if (!credentials) {
         throw new UnprocessableEntityException(
           'You did not request change password feature',
@@ -314,6 +317,9 @@ export class AuthService {
         code,
         status: PasswordStatusEnum.PENDING,
       });
+
+      this._smtpService.send(email, `Code to change password: ${code}`);
+
       return { status: StatusEnum.DONE };
     } catch (err) {
       this.Logger.error(err);
