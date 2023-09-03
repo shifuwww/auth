@@ -1,4 +1,4 @@
-import { BaseEntity } from './base.entity';
+import { BaseEntity } from 'src/common/base/base.entity';
 import { Repository } from 'typeorm';
 
 export abstract class BaseService<Entity extends BaseEntity> {

@@ -1,11 +1,10 @@
+import { BaseDto, BaseInterface } from 'src/common/base';
 import {
   Entity,
   CreateDateColumn,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { BaseDto } from './dtos';
-import { BaseInterface } from './base.interface';
 
 @Entity()
 export abstract class BaseEntity implements BaseInterface {
