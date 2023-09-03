@@ -26,7 +26,7 @@ export class RegisterDto implements RegisterInterface {
   username: string;
 
   @ApiProperty({
-    example: 'qwerty123321',
+    example: 'Qwerty123321!',
     type: String,
     description: 'Password of user',
   })
@@ -34,7 +34,7 @@ export class RegisterDto implements RegisterInterface {
   password: string;
 
   @ApiProperty({
-    example: 'user@gmail.come',
+    example: 'user@gmail.com',
     type: String,
     description: 'Email of user',
   })

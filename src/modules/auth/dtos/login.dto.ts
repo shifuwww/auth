@@ -12,7 +12,7 @@ export class LoginDto implements LoginInterface {
   username: string;
 
   @ApiProperty({
-    example: 'qwerty123321',
+    example: 'Qwerty123321!',
     type: String,
     description: 'Password of user',
   })

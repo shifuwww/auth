@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 export abstract class BaseService<Entity extends BaseEntity> {
   constructor(private readonly _genericRepository: Repository<Entity>) {}
 
-  async getOneById(id: any, relations?: any, selected?: any): Promise<Entity> {
+  async getOneById(id: any, selected?: any, relations?: any): Promise<Entity> {
     return this._genericRepository.findOneOrFail({
       ...(selected ? { select: selected } : {}),
       where: { id },

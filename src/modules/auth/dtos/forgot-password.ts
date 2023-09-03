@@ -8,7 +8,7 @@ import {
 
 export class ForgetPasswordDto implements ForgetPasswordType {
   @ApiProperty({
-    example: 'user@gmail.come',
+    example: 'user@gmail.com',
     type: String,
     description: 'Email of user',
   })
@@ -18,7 +18,7 @@ export class ForgetPasswordDto implements ForgetPasswordType {
 
 export class ValidatePasswordChangeDto implements ValidatePasswordChangeType {
   @ApiProperty({
-    example: 'user@gmail.come',
+    example: 'user@gmail.com',
     type: String,
     description: 'Email of user',
   })
@@ -45,7 +45,7 @@ export class ChangePasswordDto implements ChangePasswordType {
   password: string;
 
   @ApiProperty({
-    example: 'user@gmail.come',
+    example: 'user@gmail.com',
     type: String,
     description: 'Email of user',
   })
