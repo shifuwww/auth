@@ -40,7 +40,11 @@ export class UserService extends BaseService<UserEntity> {
     }
   }
 
-  public updateUserToken(id: string, token: string) {
+  public updateUserToken(id: string, token: string | null) {
     return this._userRepository.update({ id }, { token });
+  }
+
+  public updateUserPassword(email: string, password: string) {
+    return this._userRepository.update({ email }, { password });
   }
 }

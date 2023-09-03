@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -10,13 +11,23 @@ import { UserService } from '../user/user.service';
 import {
   ActivateRegisterDto,
   LoginDto,
+  RefreshTokenDto,
   RegisterDto,
   ResendActivateMailDto,
 } from './dtos';
 import { generateCode } from 'src/common/utils';
 import { HashingService, JwtService, SmtpService } from 'src/shared/modules';
-import { AccountRedisRepository } from './repositories';
+import {
+  AccountRedisRepository,
+  PasswordRedisRepository,
+} from './repositories';
 import { CreateUserDto } from '../user/dtos';
+import {
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  ValidatePasswordChangeDto,
+} from './dtos/forgot-password';
+import { PasswordStatusEnum } from 'src/shared/enums';
 
 @Injectable()
 export class AuthService {
@@ -24,6 +35,7 @@ export class AuthService {
 
   constructor(
     private readonly _accountRedisRepository: AccountRedisRepository,
+    private readonly _passwordRedisRepository: PasswordRedisRepository,
     private readonly _hashingService: HashingService,
     private readonly _userService: UserService,
     private readonly _smtpService: SmtpService,
@@ -59,7 +71,7 @@ export class AuthService {
 
       await this._userService.updateUserToken(user.id, tokens.refreshToken);
 
-      return { accessToken: tokens.accessToken };
+      return { ...tokens };
     } catch (err) {
       this.Logger.error(err);
       throw err;
@@ -96,8 +108,15 @@ export class AuthService {
       });
 
       this._smtpService.send(registerDto.email, code);
+    } catch (err) {
+      this.Logger.error(err);
+      throw err;
+    }
+  }
 
-      return { code };
+  public async logout(id: string) {
+    try {
+      await this._userService.updateUserToken(id, null);
     } catch (err) {
       this.Logger.error(err);
       throw err;
@@ -141,7 +160,7 @@ export class AuthService {
 
       await this._userService.updateUserToken(user.id, tokens.refreshToken);
 
-      return { accessToken: tokens.accessToken };
+      return { ...tokens };
     } catch (err) {
       this.Logger.error(err);
       throw err;
@@ -175,6 +194,136 @@ export class AuthService {
       this._smtpService.send(account.email, code);
 
       return { code };
+    } catch (err) {
+      this.Logger.error(err);
+      throw err;
+    }
+  }
+
+  public async refresh(refreshTokenDto: RefreshTokenDto) {
+    const { refreshToken } = refreshTokenDto;
+
+    try {
+      const { sub, role } = await this._jwtService.verifyJwtToken(refreshToken);
+
+      const user = await this._userService.getOneById(sub);
+
+      const tokens = await this._jwtService.createJwtToken({
+        id: user.id,
+        sub: user.id,
+        email: user.email,
+        username: user.username,
+        role,
+      });
+
+      await this._userService.updateUserToken(user.id, tokens.refreshToken);
+
+      return { ...tokens };
+    } catch (err) {
+      this.Logger.error(err);
+      throw err;
+    }
+  }
+
+  public async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    try {
+      const { email } = forgotPasswordDto;
+
+      const code = generateCode();
+
+      const user = await this._userService.getUserByEmail(email);
+
+      if (user) {
+        throw new NotFoundException();
+      }
+
+      await this._passwordRedisRepository.set({
+        ...user,
+        status: PasswordStatusEnum.PENDING,
+        code,
+      });
+
+      this._smtpService.send(email, `Code to change password: ${code}`);
+    } catch (err) {
+      this.Logger.error(err);
+      throw err;
+    }
+  }
+
+  public async resendRecoveryPassword(forgotPasswordDto: ForgotPasswordDto) {
+    try {
+      const { email } = forgotPasswordDto;
+
+      const credentials = await this._passwordRedisRepository.get({ email });
+
+      if (!credentials) {
+        throw new UnprocessableEntityException(
+          'You did not request change password feature',
+        );
+      }
+
+      await this._passwordRedisRepository.delete({ email });
+
+      const code = generateCode();
+
+      await this._passwordRedisRepository.set({
+        ...credentials,
+        code,
+        status: PasswordStatusEnum.PENDING,
+      });
+    } catch (err) {
+      this.Logger.error(err);
+      throw err;
+    }
+  }
+
+  public async validatePasswordChange(
+    validatePasswordChangeDto: ValidatePasswordChangeDto,
+  ) {
+    try {
+      const { email, code } = validatePasswordChangeDto;
+
+      const credentials = await this._passwordRedisRepository.get({ email });
+
+      if (!credentials) {
+        throw new UnprocessableEntityException(
+          'You did not request change password feature',
+        );
+      }
+
+      if (code !== credentials.code) {
+        throw new ForbiddenException('Incorrect code');
+      }
+
+      await this._passwordRedisRepository.set({
+        ...credentials,
+        status: PasswordStatusEnum.CONFIRMED,
+      });
+    } catch (err) {
+      this.Logger.error(err);
+      throw err;
+    }
+  }
+
+  public async changePassword(changePasswordDto: ChangePasswordDto) {
+    const { password, email } = changePasswordDto;
+
+    try {
+      const { id, status } = await this._passwordRedisRepository.get({ email });
+
+      if (!id) {
+        throw new UnprocessableEntityException(
+          'You did not request change password feature',
+        );
+      }
+
+      if (status === PasswordStatusEnum.PENDING) {
+        throw new ForbiddenException();
+      }
+
+      const hashPassword = await this._hashingService.hashPassword(password);
+
+      await this._userService.updateUserPassword(email, hashPassword);
     } catch (err) {
       this.Logger.error(err);
       throw err;

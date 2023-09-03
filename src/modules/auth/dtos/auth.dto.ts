@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsEmail,
   IsString,
   IsStrongPassword,
   Length,
@@ -37,6 +38,7 @@ export class RegisterDto implements RegisterInterface {
     type: String,
     description: 'Email of user',
   })
+  @IsEmail()
   email: string;
 
   role: UserRoleEnum = UserRoleEnum.User;
