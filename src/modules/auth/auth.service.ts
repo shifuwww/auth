@@ -53,7 +53,7 @@ export class AuthService {
       const user = await this._userService.getUserByUsername(username);
 
       if (!user) {
-        throw new NotFoundException();
+        throw new NotFoundException(`User ${username} does not exist`);
       }
 
       const isPasswordMatches = await this._hashingService.compare(
@@ -111,7 +111,10 @@ export class AuthService {
         code,
       });
 
-      this._smtpService.send(registerDto.email, code);
+      this._smtpService.send(
+        registerDto.email,
+        `Code to activate account: ${code}`,
+      );
 
       return { status: StatusEnum.DONE };
     } catch (err) {
@@ -214,7 +217,10 @@ export class AuthService {
         code,
       });
 
-      this._smtpService.send(account.email, code);
+      this._smtpService.send(
+        account.email,
+        `Code to activate account: ${code}`,
+      );
       return { status: StatusEnum.DONE };
     } catch (err) {
       this.Logger.error(err);
@@ -271,7 +277,7 @@ export class AuthService {
       const user = await this._userService.getUserByEmail(email);
 
       if (!user) {
-        throw new NotFoundException();
+        throw new NotFoundException(`User with email: ${email} does not exist`);
       }
 
       await this._passwordRedisRepository.set({
@@ -385,7 +391,7 @@ export class AuthService {
       }
 
       if (status === PasswordStatusEnum.PENDING) {
-        throw new ForbiddenException();
+        throw new ForbiddenException('Your request is not valid');
       }
 
       const hashPassword = await this._hashingService.hashPassword(password);
