@@ -1,6 +1,8 @@
 import {
   ConflictException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
@@ -14,6 +16,8 @@ import {
   RefreshTokenDto,
   RegisterDto,
   ResendActivateMailDto,
+  StatusDto,
+  TokenDto,
 } from './dtos';
 import { generateCode } from 'src/common/utils';
 import { HashingService, JwtService, SmtpService } from 'src/shared/modules';
@@ -27,7 +31,7 @@ import {
   ForgetPasswordDto,
   ValidatePasswordChangeDto,
 } from './dtos/forgot-password';
-import { PasswordStatusEnum } from 'src/shared/enums';
+import { PasswordStatusEnum, StatusEnum } from 'src/shared/enums';
 
 @Injectable()
 export class AuthService {
@@ -42,7 +46,7 @@ export class AuthService {
     private readonly _jwtService: JwtService,
   ) {}
 
-  public async login(loginDto: LoginDto) {
+  public async login(loginDto: LoginDto): Promise<TokenDto> {
     try {
       const { username, password } = loginDto;
 
@@ -78,7 +82,7 @@ export class AuthService {
     }
   }
 
-  public async register(registerDto: RegisterDto) {
+  public async register(registerDto: RegisterDto): Promise<StatusDto> {
     try {
       const { email, username } = registerDto;
 
@@ -108,22 +112,41 @@ export class AuthService {
       });
 
       this._smtpService.send(registerDto.email, code);
+
+      return { status: StatusEnum.DONE };
     } catch (err) {
       this.Logger.error(err);
-      throw err;
+
+      throw new HttpException(
+        {
+          status: StatusEnum.FAILED,
+          errorMessage: err,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
-  public async logout(id: string) {
+  public async logout(id: string): Promise<StatusDto> {
     try {
       await this._userService.updateUserToken(id, null);
+      return { status: StatusEnum.DONE };
     } catch (err) {
       this.Logger.error(err);
-      throw err;
+
+      throw new HttpException(
+        {
+          status: StatusEnum.FAILED,
+          errorMessage: err,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
-  public async activateAccount(activateRegisterDto: ActivateRegisterDto) {
+  public async activateAccount(
+    activateRegisterDto: ActivateRegisterDto,
+  ): Promise<TokenDto> {
     try {
       const { username, code } = activateRegisterDto;
 
@@ -169,7 +192,7 @@ export class AuthService {
 
   public async resendActivateMailCode(
     resendActivateMailDto: ResendActivateMailDto,
-  ) {
+  ): Promise<StatusDto> {
     try {
       const { username } = resendActivateMailDto;
 
@@ -192,15 +215,21 @@ export class AuthService {
       });
 
       this._smtpService.send(account.email, code);
-
-      return { code };
+      return { status: StatusEnum.DONE };
     } catch (err) {
       this.Logger.error(err);
-      throw err;
+
+      throw new HttpException(
+        {
+          status: StatusEnum.FAILED,
+          errorMessage: err,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
-  public async refresh(refreshTokenDto: RefreshTokenDto) {
+  public async refresh(refreshTokenDto: RefreshTokenDto): Promise<TokenDto> {
     const { refreshToken } = refreshTokenDto;
 
     try {
@@ -227,7 +256,9 @@ export class AuthService {
     }
   }
 
-  public async forgetPassword(forgetPasswordDto: ForgetPasswordDto) {
+  public async forgetPassword(
+    forgetPasswordDto: ForgetPasswordDto,
+  ): Promise<StatusDto> {
     try {
       const { email } = forgetPasswordDto;
 
@@ -246,13 +277,23 @@ export class AuthService {
       });
 
       this._smtpService.send(email, `Code to change password: ${code}`);
+      return { status: StatusEnum.DONE };
     } catch (err) {
       this.Logger.error(err);
-      throw err;
+
+      throw new HttpException(
+        {
+          status: StatusEnum.FAILED,
+          errorMessage: err,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
-  public async resendRecoveryPassword(forgotPasswordDto: ForgetPasswordDto) {
+  public async resendRecoveryPassword(
+    forgotPasswordDto: ForgetPasswordDto,
+  ): Promise<StatusDto> {
     try {
       const { email } = forgotPasswordDto;
 
@@ -273,15 +314,23 @@ export class AuthService {
         code,
         status: PasswordStatusEnum.PENDING,
       });
+      return { status: StatusEnum.DONE };
     } catch (err) {
       this.Logger.error(err);
-      throw err;
+
+      throw new HttpException(
+        {
+          status: StatusEnum.FAILED,
+          errorMessage: err,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
   public async validatePasswordChange(
     validatePasswordChangeDto: ValidatePasswordChangeDto,
-  ) {
+  ): Promise<StatusDto> {
     try {
       const { email, code } = validatePasswordChangeDto;
 
@@ -301,13 +350,23 @@ export class AuthService {
         ...credentials,
         status: PasswordStatusEnum.CONFIRMED,
       });
+      return { status: StatusEnum.DONE };
     } catch (err) {
       this.Logger.error(err);
-      throw err;
+
+      throw new HttpException(
+        {
+          status: StatusEnum.FAILED,
+          errorMessage: err,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
-  public async changePassword(changePasswordDto: ChangePasswordDto) {
+  public async changePassword(
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<StatusDto> {
     const { password, email } = changePasswordDto;
 
     try {
@@ -326,15 +385,17 @@ export class AuthService {
       const hashPassword = await this._hashingService.hashPassword(password);
 
       await this._userService.updateUserPassword(email, hashPassword);
+      return { status: StatusEnum.DONE };
     } catch (err) {
       this.Logger.error(err);
-      throw err;
+
+      throw new HttpException(
+        {
+          status: StatusEnum.FAILED,
+          errorMessage: err,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
     }
-  }
-
-  public async validateToken(token: string) {
-    const { id } = await this._jwtService.verifyAtJwtToken(token);
-
-    return this._userService.getOneById(id);
   }
 }
