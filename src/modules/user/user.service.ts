@@ -28,6 +28,12 @@ export class UserService extends BaseService<UserEntity> {
     });
   }
 
+  public getAllUsers() {
+    return this._userRepository.find({
+      select: ['id', 'email', 'role', 'username', 'createdAt', 'updatedAt'],
+    });
+  }
+
   public createUser(createUserDto: CreateUserDto) {
     try {
       const newUser = new UserEntity();

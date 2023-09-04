@@ -9,3 +9,5 @@ export type GetUserType = Omit<
   UserInterface,
   'token' | 'password' | 'createdAt' | 'updatedAt'
 >;
+
+export type GetUserByAdminType = Omit<UserInterface, 'token' | 'password'>;

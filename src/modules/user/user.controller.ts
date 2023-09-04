@@ -35,10 +35,10 @@ export class UserController {
   public getUserByToken(@Req() request: any): Promise<GetUserDto> {
     const user = request.user as UserAtJwtInterface;
     return this._userService.getOneById(user.id, [
+      'id',
       'username',
       'email',
       'role',
-      'createdAt',
     ]);
   }
 }
